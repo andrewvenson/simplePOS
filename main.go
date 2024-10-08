@@ -57,13 +57,14 @@ func drawBox(gtx layout.Context, sizeX int, sizeY int, color color.NRGBA) layout
 }
 
 func renderAddMenuItemButton(gtx layout.Context, theme *material.Theme, addMenuItemButton *widget.Clickable, displayMenu *bool) layout.Dimensions {
+	buttonWidth := 100
+	buttonLength := 50
+	defer op.Offset(image.Pt(gtx.Constraints.Max.X-(buttonWidth+(MARGIN*2)), 0)).Push(gtx.Ops).Pop()
+
 	for addMenuItemButton.Clicked(gtx) {
 		fmt.Println("Add Menu item menu!")
 		*displayMenu = true
 	}
-
-	buttonWidth := 100
-	buttonLength := 50
 
 	return layout.UniformInset(MARGIN).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = buttonWidth
@@ -161,26 +162,22 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 					layout.Rigid(layout.Spacer{Width: MARGIN}.Layout),
 					layout.Flexed(2, func(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Top: 34}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-							return layout.Background{}.Layout(gtx,
-								func(gtx layout.Context) layout.Dimensions {
+							return layout.Stack{}.Layout(gtx,
+								layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 									return drawBox(gtx, gtx.Constraints.Max.X, gtx.Constraints.Max.Y, Black)
-								},
-								func(gtx layout.Context) layout.Dimensions {
-									return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
-										layout.Flexed(3, func(gtx layout.Context) layout.Dimensions {
+								}),
+								layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+									return layout.Stack{}.Layout(gtx,
+										layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 												renderMenuItemButtons(theme, menuItems)...,
 											)
 										}),
-										layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-											return layout.Flex{Axis: layout.Vertical, Alignment: layout.End}.Layout(gtx,
-												layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-													return renderAddMenuItemButton(gtx, theme, addMenuItemButton, displayMenu)
-												}),
-											)
+										layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+											return renderAddMenuItemButton(gtx, theme, addMenuItemButton, displayMenu)
 										}),
 									)
-								},
+								}),
 							)
 						})
 					}),
