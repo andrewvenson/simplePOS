@@ -59,7 +59,7 @@ func drawBox(gtx layout.Context, sizeX int, sizeY int, color color.NRGBA) layout
 func renderAddMenuItemButton(gtx layout.Context, theme *material.Theme, addMenuItemButton *widget.Clickable, displayMenu *bool) layout.Dimensions {
 	buttonWidth := 100
 	buttonLength := 50
-	defer op.Offset(image.Pt(gtx.Constraints.Max.X-(buttonWidth+(MARGIN*2)), 0)).Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(gtx.Constraints.Min.X-(buttonWidth+(MARGIN*2)), 0)).Push(gtx.Ops).Pop()
 
 	for addMenuItemButton.Clicked(gtx) {
 		fmt.Println("Add Menu item menu!")
@@ -169,9 +169,10 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 								layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 									return layout.Stack{}.Layout(gtx,
 										layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-											return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+											layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 												renderMenuItemButtons(theme, menuItems)...,
 											)
+											return layout.Dimensions{Size: gtx.Constraints.Max}
 										}),
 										layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 											return renderAddMenuItemButton(gtx, theme, addMenuItemButton, displayMenu)
