@@ -79,14 +79,16 @@ func renderAddMenuItemButton(gtx layout.Context, theme *material.Theme, addMenuI
 }
 
 func renderConfirmMenuItemButton(gtx layout.Context, theme *material.Theme, addMenuItemButton *widget.Clickable, menuItemButtons *[]*widget.Clickable, displayMenu *bool) layout.Dimensions {
+	buttonWidth := 100
+	buttonLength := 50
+
+	defer op.Offset(image.Pt(gtx.Constraints.Min.X-(buttonWidth+(MARGIN*2)), gtx.Constraints.Min.Y-(buttonLength+(MARGIN*2)))).Push(gtx.Ops).Pop()
+
 	for addMenuItemButton.Clicked(gtx) {
 		fmt.Println("Add Menu item menu!")
 		addMenuItems(menuItemButtons)
 		*displayMenu = false
 	}
-
-	buttonWidth := 100
-	buttonLength := 50
 
 	return layout.UniformInset(MARGIN).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		gtx.Constraints.Min.X = buttonWidth
@@ -187,13 +189,14 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 			layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 				return layout.UniformInset(200).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 					if *displayMenu {
-						return layout.Background{}.Layout(gtx,
-							func(gtx layout.Context) layout.Dimensions {
+						return layout.Stack{}.Layout(gtx,
+							layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 								return drawBox(gtx, gtx.Constraints.Max.X, gtx.Constraints.Max.Y, Gray)
-							},
-							func(gtx layout.Context) layout.Dimensions {
-								return renderConfirmMenuItemButton(gtx, theme, confirmMenuItemButton, menuItems, displayMenu)
-							})
+							}),
+							layout.Expanded(func(gtx layout.Context) layout.Dimensions {
+								renderConfirmMenuItemButton(gtx, theme, confirmMenuItemButton, menuItems, displayMenu)
+								return layout.Dimensions{Size: gtx.Constraints.Max}
+							}))
 					}
 					return layout.Dimensions{Size: gtx.Constraints.Max}
 				})
