@@ -107,18 +107,31 @@ func renderTitle(gtx layout.Context, theme *material.Theme) layout.Dimensions {
 	return title.Layout(gtx)
 }
 
-func renderMenuItemButtons(theme *material.Theme, menuItemButtons *[]*widget.Clickable, menuItemInputs *[]string) []layout.FlexChild {
+func renderMenuItemButtons(theme *material.Theme, menuItemButtons *[]*widget.Clickable, menuItemInputs *[]string, gtx layout.Context) layout.StackChild {
 	buttonWidth := 100
 	buttonLength := 50
 	menuItems := *menuItemButtons // need to dereference first
 	menuItemLayouts := []layout.FlexChild{}
+	lastSlice := 0
+
+	type Test struct {
+		MIL []layout.FlexChild
+	}
+
+	menuItemFlexes := []Test{}
 
 	if len(menuItems) > 0 {
 		for index, menuItem := range menuItems {
+			if index != 0 && ((index+1)%5) == 0 {
+				menuItemFlexes = append(menuItemFlexes, Test{MIL: menuItemLayouts[lastSlice:]})
+				lastSlice = index + 1
+				fmt.Println("we at index", index, lastSlice)
+			}
 			menuItemLayouts = append(menuItemLayouts,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 					return layout.UniformInset(MARGIN).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 						inputs := *menuItemInputs
+
 						for menuItem.Clicked(gtx) {
 							fmt.Println(inputs[index])
 						}
@@ -135,7 +148,16 @@ func renderMenuItemButtons(theme *material.Theme, menuItemButtons *[]*widget.Cli
 				}))
 		}
 	}
-	return menuItemLayouts
+
+	return layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+		for index, flex := range menuItemFlexes {
+			if index != 0 {
+				defer op.Offset(image.Pt((buttonWidth+MARGIN)*index, 0)).Push(gtx.Ops).Pop()
+			}
+			layout.Flex{Axis: layout.Vertical}.Layout(gtx, flex.MIL...)
+		}
+		return layout.Dimensions{Size: gtx.Constraints.Max}
+	})
 }
 
 func addMenuItems(menuItemButtons *[]*widget.Clickable, menuItemInput *widget.Editor, menuItemInputs *[]string) {
@@ -150,8 +172,10 @@ func addMenuItems(menuItemButtons *[]*widget.Clickable, menuItemInput *widget.Ed
 func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *widget.Clickable, menuItems *[]*widget.Clickable, displayMenu *bool, confirmMenuItemButton *widget.Clickable, menuItemInput *widget.Editor, menuItemInputs *[]string) {
 	layout.UniformInset(MARGIN).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Stack{}.Layout(gtx,
+			// Main layout backround
 			layout.Stacked(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+					// Check Viewer
 					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
@@ -164,6 +188,7 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 						)
 					}),
 					layout.Rigid(layout.Spacer{Width: MARGIN}.Layout),
+					// Menu Viewer
 					layout.Flexed(2, func(gtx layout.Context) layout.Dimensions {
 						return layout.Inset{Top: 34}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 							return layout.Stack{}.Layout(gtx,
@@ -172,12 +197,7 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 								}),
 								layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 									return layout.Stack{}.Layout(gtx,
-										layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-											layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-												renderMenuItemButtons(theme, menuItems, menuItemInputs)...,
-											)
-											return layout.Dimensions{Size: gtx.Constraints.Max}
-										}),
+										renderMenuItemButtons(theme, menuItems, menuItemInputs, gtx),
 										layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 											return renderAddMenuItemButton(gtx, theme, addMenuItemButton, displayMenu)
 										}),
@@ -188,6 +208,7 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 					}),
 				)
 			}),
+			// Menu Editor
 			layout.Expanded(func(gtx layout.Context) layout.Dimensions {
 				return layout.UniformInset(200).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 					if *displayMenu {
@@ -196,7 +217,6 @@ func renderLayout(gtx layout.Context, theme *material.Theme, addMenuItemButton *
 								return drawBox(gtx, gtx.Constraints.Max.X, gtx.Constraints.Max.Y, Gray)
 							}),
 							layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-
 								layout.Inset{Top: MARGIN}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 									return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 										drawBox(gtx, 255, 30, Black)
